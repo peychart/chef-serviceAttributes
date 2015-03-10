@@ -43,88 +43,64 @@
 
  (1): Dots are not allowed in databags items (only alphanumeric); must be substitute by underscores...
 
-eg:
+eg. in data bag "service":
 <pre>
 {
-  "id": "ldap2_toriki_dmz_srv_gov_pf",
-  "haproxy":{
-    "services":{
-      "ldap_cluster":{
-        "app_server_role": "toriki.dmz.srv",
-        "pool_members":[{
-          "hostname":"ldap2",
-          "ipaddress":"ldap2.toriki.dmz.srv.gov.pf",
-          "member_port":"390",
-          "member_options":"check port 5667 inter 2s fall 5 rise 1"
-        }]
+  "id": "owncloud",
+  "chef-lvm": {
+    "lvm_volume_group": [
+      {
+        "name": "ubuntu-1404-vg",
+        "physical_volumes": [
+          "/dev/sdb"
+        ]
+      },
+      {
+        "name": "vg_data",
+        "physical_volumes": [
+          "/dev/sdc"
+        ],
+        "logical_volume": [
+          {
+            "name": "owncloud",
+            "size": "100%FREE",
+            "filesystem": "reiserfs",
+            "mount_point": {
+              "location": "/var/www/owncloud",
+              "options": "noatime,notail,nobootwait"
+            }
+          }
+        ]
       }
-    }
+    ]
+  }
+  "chef-owncloud": {
+    "!otheroptions": [
+      "'blacklisted_files' => array('.htaccess')",
+      "'overwritewebroot' => '/owncloud'",
+      "'proxy' => 'login:password@squid.a1a2.srv.gov.pf:3128'",
+      "'default_language' => 'fr'",
+      "'enable_avatars' => true",
+      "",
+      "'default_language' => 'fr'",
+      "'enable_avatars' => true",
+      "",
+      "'appstoreenabled' => false",
+      "'loglevel' => '0'"
+    ]
   },
-  "iproute2":{}
-}
-{
-  "id": "ldap_toriki_dmz_srv_gov_pf",
-  "haproxy": {
-    "httpchk": "HEAD",
-    "services": {
-      "ldap_cluster": {
-        "app_server_role": "toriki.dmz.srv",
-        "httpchk": "HEAD",
-        "mode": "tcp",
-        "balance": "leastconn",
-        "incoming_address": "0.0.0.0",
-        "incoming_port": "389"
-      }
-    }
-  },
-  "iproute2": {}
-}
-{
-  "id": "ldap1_toriki_dmz_srv_gov_pf",
-  "haproxy":{
-    "services":{
-      "ldap_cluster":{
-        "app_server_role": "toriki.dmz.srv",
-        "pool_members":[{
-          "hostname":"ldap1",
-          "ipaddress":"ldap1.toriki.dmz.srv.gov.pf",
-          "member_port":"390",
-          "member_options":"check port 5667 inter 2s fall 5 rise 1"
-        }]
-      }
-    }
-  },
-  "iproute2":{}
-}
-{
-  "id": "loadbalancer_dev_gov_pf",
-  "iproute2":{
-  },
-  "haproxy":{
-    "services": {
-      "ldap_cluster": {
-        "app_server_role": "",
-        "incoming_address": "0.0.0.0",
-        "incoming_port": "389",
-        "mode": "tcp",
-        "httpchk": "HEAD",
-        "balance": "leastconn",
-        "pool_members": [{
-          "hostname": "ldapwrite",
-          "ipaddress": "ldapwrite.srv.gov.pf",
-          "member_port": "390",
-          "member_options": "check port 5667 inter 2s fall 5 rise 1"
-        },{
-          "hostname": "ldapsecond",
-          "ipaddress": "ldapsecond.srv.gov.pf",
-          "member_port": "390",
-          "member_options": "check port 5667 inter 2s fall 5 rise 1"
-        },{
-          "hostname": "ldapdmz",
-          "ipaddress": "ldapdmz.srv.gov.pf",
-          "member_port": "389",
-          "member_options": "check addr localhost port 5667 inter 2s fall 5 rise 1 backup"
-        }]
+  "chef-iptables": {
+    "ipv4rules": {
+      "filter": {
+        "INPUT": {
+          "https": [
+            "--protocol tcp --dport 80 --match state --state NEW --jump ACCEPT",
+            "--protocol tcp --dport 443 --match state --state NEW --jump ACCEPT"
+          ]
+        },
+        "OUTPUT": {
+          "default": "-j ACCEPT"
+        }
       }
     }
   }
@@ -140,12 +116,12 @@ Include `chef-serviceAttributes` in your node's `run_list`:
 {
   "override_attributes" => {
     "chef-serviceAttributes" => {
-      "myDatabagName" => "clusters"    // Can be a stringsArray...
+      "service" => "onwcloud"    // Can be a stringsArray...
     }
   },
   "run_list" => [
-    "other.chef-serviceAttributes::default",
-    "other.chef-cookbook::recipe"
+    "recipe[chef-serviceAttributes::default]",
+    "recipe[chef-owncloud::default]"
   ]
 }
 ```
