@@ -55,18 +55,17 @@ def getDataBag( name, item, secret_key )
 end
 
 def getDatabagsNames( v )
-  databagName = ""
-  servName = []
   if v.is_a? Hash
-        v.each do |n,i|; if n != "precedence" && n != "secret_key" # Nerver use these names... ;-)
-          databagName = n
-          getDatabagsNames( i ).each do |n, j|; servName.concat( j ); end
-        end; end
-  elsif v.is_a? Array
-        v.each do | i |; getDatabagsNames( i ).each do |n, j|; servName.concat( j ); end; end
-  else  servName.push( v )
+    v.each do |n,i|; if n != "precedence" && n != "secret_key" # Nerver use these names... ;-)
+      return Hash[ n, i ] if i.is_a? Array
+      puts
+      puts '####################################################################'
+      puts "!!! DATA BAG DEFINE ERROR: must be an array (id=#{v})..."
+      puts '####################################################################'
+      puts
+    end; end
   end
-  Hash[ databagName, servName ]
+  return nil
 end
 
 getDatabagsNames( node['chef-serviceAttributes'] ).each do |n, i|
